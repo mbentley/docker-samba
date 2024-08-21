@@ -3,10 +3,9 @@ FROM mbentley/alpine:latest
 LABEL maintainer="Matt Bentley <mbentley@mbentley.net>"
 
 # install samba and s6
-RUN apk add --no-cache avahi avahi-compat-libdns_sd avahi-tools dbus samba-common-tools s6 samba-server &&\
+RUN apk add --no-cache s6 samba-common-tools samba-server &&\
   touch /etc/samba/lmhosts &&\
-  rm /etc/avahi/services/*.service /etc/samba/smb.conf &&\
-  mkdir /var/run/dbus
+  rm /etc/samba/smb.conf
 
 # copy in necessary supporting config files
 COPY s6 /etc/s6
