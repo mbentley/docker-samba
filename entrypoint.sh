@@ -1,24 +1,30 @@
 #!/bin/sh
 
 # set default values
-SET_PERMISSIONS="${SET_PERMISSIONS:-false}"
-SHARE_NAME="${SHARE_NAME:-samba}"
-NTLM_AUTH="${NTLM_AUTH:-no}"
-CUSTOM_SMB_CONF="${CUSTOM_SMB_CONF:-false}"
-SMB_PROTO="${SMB_PROTO:-SMB2}"
-SMB_PORT="${SMB_PORT:-445}"
 USERNAME="${USERNAME:-samba}"
 PASSWORD="${PASSWORD:-samba}"
 GROUPNAME="${GROUPNAME:-samba}"
+SAMBA_USER_UID="${SAMBA_USER_UID:-1000}"
+SAMBA_USER_GID="${SAMBA_USER_GID:-${SAMBA_USER_UID}}"
+SHARE_NAME="${SHARE_NAME:-samba}"
+
+# entrypoint settings
+CUSTOM_SMB_CONF="${CUSTOM_SMB_CONF:-false}"
+SET_PERMISSIONS="${SET_PERMISSIONS:-false}"
+
+# [global] settings
+NTLM_AUTH="${NTLM_AUTH:-no}"
+SMB_PROTO="${SMB_PROTO:-SMB2}"
+SMB_PORT="${SMB_PORT:-445}"
 WORKGROUP="${WORKGROUP:-WORKGROUP}"
+
+# [share] settings
 HIDE_SHARES="${HIDE_SHARES:-no}"
-SMB_INHERIT_PERMISSIONS="${SMB_INHERIT_PERMISSIONS:-no}"
-SHARE_PATH="${SHARE_PATH:-/opt/${USERNAME}}"
 IGNORE_DOS_ATTRIBUTES="${IGNORE_DOS_ATTRIBUTES:-false}"
-PUID="${PUID:-1000}"
-PGID="${PGID:-${PUID}}"
 PUBLIC_ACCESS="${PUBLIC_ACCESS:-false}"
 READ_ONLY="${READ_ONLY:-yes}"
+SHARE_PATH="${SHARE_PATH:-/opt/${USERNAME}}"
+SMB_INHERIT_PERMISSIONS="${SMB_INHERIT_PERMISSIONS:-no}"
 
 
 # common functions
@@ -71,15 +77,15 @@ createdir() {
 
 create_smb_user() {
   # validate that none of the required environment variables are empty
-  if [ -z "${USERNAME}" ] || [ -z "${GROUPNAME}" ] || [ -z "${PASSWORD}" ] || [ -z "${SHARE_NAME}" ] || [ -z "${PUID}" ] || [ -z "${PGID}" ]
+  if [ -z "${USERNAME}" ] || [ -z "${GROUPNAME}" ] || [ -z "${PASSWORD}" ] || [ -z "${SHARE_NAME}" ] || [ -z "${SAMBA_USER_UID}" ] || [ -z "${SAMBA_USER_GID}" ]
   then
     echo "ERROR: Missing one or more of the following variables; unable to create user"
     echo "  USERNAME=${USERNAME}"
     echo "  GROUPNAME=${GROUPNAME}"
     echo "  PASSWORD=$(if [ -n "${PASSWORD}" ]; then printf "<value reddacted but present>";fi)"
     echo "  SHARE_NAME=${SHARE_NAME}"
-    echo "  PUID=${PUID}"
-    echo "  PGID=${PGID}"
+    echo "  SAMBA_USER_UID=${SAMBA_USER_UID}"
+    echo "  SAMBA_USER_GID=${SAMBA_USER_GID}"
     exit 1
   fi
 
@@ -90,15 +96,15 @@ create_smb_user() {
     echo "INFO: Group ${GROUPNAME} exists; skipping creation"
   else
     # make sure the group doesn't already exist with a different name
-    if awk -F ':' '{print $3}' /etc/group | grep -q "^${PGID}$"
+    if awk -F ':' '{print $3}' /etc/group | grep -q "^${SAMBA_USER_GID}$"
     then
-      EXISTING_GROUP="$(grep ":${PGID}:" /etc/group | awk -F ':' '{print $1}')"
+      EXISTING_GROUP="$(grep ":${SAMBA_USER_GID}:" /etc/group | awk -F ':' '{print $1}')"
       echo "INFO: Group already exists with a different name; renaming '${EXISTING_GROUP}' to '${GROUPNAME}'..."
       sed -i "s/^${EXISTING_GROUP}:/${GROUPNAME}:/g" /etc/group
     else
       echo "INFO: Group ${GROUPNAME} doesn't exist; creating..."
       # create the group
-      addgroup -g "${PGID}" "${GROUPNAME}"
+      addgroup -g "${SAMBA_USER_GID}" "${GROUPNAME}"
     fi
   fi
 
@@ -109,7 +115,7 @@ create_smb_user() {
   else
     echo "INFO: User ${USERNAME} doesn't exist; creating..."
     # create the user
-    adduser -u "${PUID}" -G "${GROUPNAME}" -h "${SHARE_PATH}" -s /bin/false -D "${USERNAME}"
+    adduser -u "${SAMBA_USER_UID}" -G "${GROUPNAME}" -h "${SHARE_PATH}" -s /bin/false -D "${USERNAME}"
 
     # set the user's password if necessary
     set_password
@@ -124,8 +130,10 @@ create_smb_user() {
     echo "INFO: CUSTOM_SMB_CONF=false; generating [${SHARE_NAME}] section of /etc/samba/smb.conf..."
     echo "
 [${SHARE_NAME}]
-   path = ${SHARE_PATH}
+   access based share enum = ${HIDE_SHARES}
    inherit permissions = ${SMB_INHERIT_PERMISSIONS}
+   hide unreadable = ${HIDE_SHARES}
+   path = ${SHARE_PATH}
    read only = ${READ_ONLY}
    #valid users = ${USERNAME}" >> /etc/samba/smb.conf
    if [ "${PUBLIC_ACCESS}" = "true" ]
@@ -176,10 +184,6 @@ if [ "${CUSTOM_SMB_CONF}" != "true" ]
 then
   echo "INFO: CUSTOM_SMB_CONF=false; generating [global] section of /etc/samba/smb.conf..."
   echo "[global]
-   #log level = 3 passdb:5 auth:5
-   access based share enum = ${HIDE_SHARES}
-   hide unreadable = ${HIDE_SHARES}
-   inherit permissions = ${SMB_INHERIT_PERMISSIONS}
    load printers = no
    log file = /var/log/samba/log.%m
    logging = file
