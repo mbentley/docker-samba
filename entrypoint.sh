@@ -194,14 +194,16 @@ then
    server role = standalone server
    smb ports = ${SMB_PORT}
    workgroup = ${WORKGROUP}" > /etc/samba/smb.conf
-fi
-if [ "${IGNORE_DOS_ATTRIBUTES}" = "true" ]
-then
-  echo "   store dos attributes = no
- map hidden = no
- map system = no
- map archive = no
- map readonly = no" >> /etc/samba/smb.conf
+
+  # add settings to ignore dos attributes, if desired
+  if [ "${IGNORE_DOS_ATTRIBUTES}" = "true" ]
+  then
+    echo "   store dos attributes = no
+   map hidden = no
+   map system = no
+   map archive = no
+   map readonly = no" >> /etc/samba/smb.conf
+  fi
 fi
 
 # create user & user share
