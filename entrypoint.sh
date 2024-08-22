@@ -211,6 +211,28 @@ create_smb_user
 createdir /var/lib/samba/private 700
 createdir /var/log/samba/cores 700
 
+# write avahi config file (smbd.service) to customize services advertised
+echo "INFO: Avahi - generating base configuration in /etc/avahi/services/smbd.service..."
+SERVICE_NAME="%h"
+HOSTNAME_XML=""
+if [ -n "${ADVERTISED_HOSTNAME}" ]
+then
+  echo "INFO: Avahi - using ${ADVERTISED_HOSTNAME} as hostname."
+  SERVICE_NAME="${ADVERTISED_HOSTNAME}"
+  HOSTNAME_XML="<host-name>${ADVERTISED_HOSTNAME}.local</host-name>"
+fi
+echo "<?xml version=\"1.0\" standalone='no'?><!--*-nxml-*-->
+<!DOCTYPE service-group SYSTEM \"avahi-service.dtd\">
+
+<service-group>
+<name replace-wildcards=\"yes\">${SERVICE_NAME}</name>
+<service>
+  <type>_smb._tcp</type>
+  <port>${SMB_PORT}</port>
+  ${HOSTNAME_XML}
+</service>
+</service-group>" > /etc/avahi/services/smbd.service
+
 # cleanup PID files
 for PIDFILE in nmbd samba-bgqd smbd
 do
@@ -220,6 +242,20 @@ do
     rm -v /run/samba/${PIDFILE}.pid
   fi
 done
+
+# cleanup dbus PID file
+if [ -f /run/dbus/dbus.pid ]
+then
+  echo "INFO: dbus PID exists; removing..."
+  rm -v /run/dbus/dbus.pid
+fi
+
+# cleanup avahi PID file
+if [ -f /run/avahi-daemon/pid ]
+then
+  echo "INFO: avahi PID exists; removing..."
+  rm -v /run/avahi-daemon/pid
+fi
 
 # output filesystem types detected
 for DIR in /opt/*
