@@ -4,7 +4,7 @@ docker image based on alpine:latest to run a generic Samba container where you b
 
 ## Usage
 
-Example usage - see further below for additional information about the `ACCOUNT_*`, `UID_*` and `GROUP_*` environment variables.
+Example usage - see further below for additional information about the `ACCOUNT_*`, and `GROUP_*` environment variables.
 
 ```
 docker run -d \
@@ -15,11 +15,10 @@ docker run -d \
   -p 138:138/udp \
   -p 5353:5353/udp \
   -e DEBUG_LEVEL="1" \
-  -e ACCOUNT_user1="mysecret" \
-  -e UID_user1="1000" \
-  -e ACCOUNT_user2="mysecret" \
-  -e UID_user2="1001" \
-  -e GROUP_home="2000:user1" \
+  -e ACCOUNT_user1="1000:mysecret" \
+  -e ACCOUNT_user2="1001:mysecret" \
+  -e ACCOUNT_user3="1002:mysecret" \
+  -e GROUP_home="2000:user1 user2 user3" \
   -v /path/to/my/smb.conf":/etc/samba/smb.conf \
   -v /path/to/my/data:/data \
   --tmpfs /run/samba \
@@ -44,18 +43,16 @@ You need to bind mount any shares into the container at the appropriate path. Fo
 
 ## User Accounts
 
-Replace `<username>`, `<password>`, and `<uid>` with the username, password and user id # you wish the user to have, repeating as necessary for all users.
+Replace `<username>`, `<uid>`, and `<password>` with the username, user id #, and password you wish the user to have, repeating as necessary for all users.
 
 ```
--e ACCOUNT_<username>="<password>" \
--e UID_<username>="<uid>" \
+-e ACCOUNT_<username>="<uid>:<password>" \
 ```
 
 Example to create the user `user1` with the user id `1000` and the samba password `mysecret`:
 
 ```
--e ACCOUNT_user1="mysecret" \
--e UID_user1="1000" \
+-e ACCOUNT_user1="1000:mysecret" \
 ```
 
 ## Groups

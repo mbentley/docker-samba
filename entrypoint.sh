@@ -83,15 +83,18 @@ then
     # extract get username from the key
     USERNAME="$(echo "${VAR}" | awk -F '^ACCOUNT_' '{print $2}')"
 
-    # assume we want the group name to match the username
+    # assume we want the user's group name to match the username
     GROUP="${USERNAME}"
 
-    # set VAR to varname then use substitution to get the password from the value
+    # set VAR to varname then use substitution to get the UID & password from the value
     VARNAME="${VAR}"
-    PASSWORD="${!VARNAME}"
+    UID_PASSWORD="${!VARNAME}"
 
     # get UID from the variable
-    USER_UID="$(env | grep "UID_${USERNAME}" | awk -F '=' '{print $2}')"
+    USER_UID="$(echo "${UID_PASSWORD}" | awk -F ':' '{print $1}')"
+
+    # get the password from the rest of the variable
+    PASSWORD="$(echo "${UID_PASSWORD}" | awk -F "^${USER_UID}:" '{print $2}')"
 
     # TODO: make sure none of these are empty before adding
 
