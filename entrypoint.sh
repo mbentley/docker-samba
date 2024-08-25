@@ -94,7 +94,7 @@ then
     USER_UID="$(echo "${UID_PASSWORD}" | awk -F ':' '{print $1}')"
 
     # get the password from the rest of the variable
-    PASSWORD="$(echo "${UID_PASSWORD}" | awk -F "^${USER_UID}:" '{print $2}')"
+    PASSWORD="${UID_PASSWORD/${USER_UID}:/}"
 
     # TODO: make sure none of these are empty before adding
 
