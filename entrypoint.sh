@@ -70,6 +70,13 @@ createdir() {
 }
 
 
+# check to see if a secret source was set
+if [ -n "${SECRET_FILE}" ] && [ -f "${SECRET_FILE}" ]
+then
+  echo "INFO: loading secrets from ${SECRET_FILE}..."
+  . "${SECRET_FILE}"
+fi
+
 # make sure a samba config file exists
 if [ -f /etc/samba/smb.conf ]
 then

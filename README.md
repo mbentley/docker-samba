@@ -46,13 +46,13 @@ You need to bind mount any shares into the container at the appropriate path. Fo
 Replace `<username>`, `<uid>`, and `<password>` with the username, user id #, and password you wish the user to have, repeating as necessary for all users.
 
 ```
--e ACCOUNT_<username>="<uid>:<password>" \
+-e ACCOUNT_<username>="<uid>:<password>"
 ```
 
 Example to create the user `user1` with the user id `1000` and the samba password `mysecret`:
 
 ```
--e ACCOUNT_user1="1000:mysecret" \
+-e ACCOUNT_user1="1000:mysecret"
 ```
 
 ## Groups
@@ -69,11 +69,13 @@ Example to create the group `mygroup` with GID of `2000` and add the users `user
 -e GROUP_mygroup="2000:user1 user2 user3"
 ```
 
-## My Notes
+## Secret file
 
-Depending on the samba config, you might need to use :
+If you do not want to set env vars at the container level, you can bind mount them into the container and have the entrypoint load them. Set the env var `SECRET_FILE` to the path where it is bind mounted in the container. The file format is:
 
-```
-cap_add:
-   - CAP_NET_ADMIN
+```bash
+export ACCOUNT_user1="1000:mysecret"
+export ACCOUNT_user2="1001:mysecret"
+export ACCOUNT_user3="1002:mysecret"
+export GROUP_mygroup="2000:user1 user2 user3"
 ```
