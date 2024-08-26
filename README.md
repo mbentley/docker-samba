@@ -37,6 +37,8 @@ docker run -it --rm --entrypoint cat mbentley/samba /etc/samba/smb.sample.conf
 
 The configuration needs to be bind mounted to `/etc/samba/smb.conf` inside the container as that is where samba will look for it.
 
+The [`smb.conf` man page](https://www.samba.org/samba/docs/current/man-html/smb.conf.5.html) is a great resource for details on the settings and their options.
+
 ### Shares
 
 You need to bind mount any shares into the container at the appropriate path. For example, if you have data on your host at `/path/to/my/data`, you could bind mount it to `/data`, assuming that your `smb.conf` refers to `/data` as the path. The `smb.conf` should reference all paths as they exist inside the container, not on the host!
