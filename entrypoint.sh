@@ -54,6 +54,22 @@ add_user_to_group() {
   addgroup "${USERNAME}" "${GROUP}"
 }
 
+createdir() {
+  # create directory, if needed
+  if [ ! -d "${1}" ]
+  then
+    echo "INFO: Creating ${1}"
+    mkdir -p "${1}"
+  fi
+
+  # set permissions, if needed
+  if [ -n "${2}" ]
+  then
+    chmod "${2}" "${1}"
+  fi
+}
+
+
 # make sure a samba config file exists
 if [ -f /etc/samba/smb.conf ]
 then
@@ -151,6 +167,32 @@ else
   # no groups to process
   echo -e "INFO: no groups to process, skipping...\n"
 fi
+
+# mkdirs if needed
+createdir /var/lib/samba/private 700
+createdir /var/log/samba/cores 700
+
+# write avahi config file (smbd.service) to customize services advertised
+echo "INFO: generating avahi configuration for /etc/avahi/services/smbd.service..."
+SERVICE_NAME="%h"
+HOSTNAME_XML=""
+if [ -n "${ADVERTISED_HOSTNAME}" ]
+then
+  echo "INFO: Avahi - using ${ADVERTISED_HOSTNAME} as hostname."
+  SERVICE_NAME="${ADVERTISED_HOSTNAME}"
+  HOSTNAME_XML="<host-name>${ADVERTISED_HOSTNAME}.local</host-name>"
+fi
+echo "<?xml version=\"1.0\" standalone='no'?><!--*-nxml-*-->
+<!DOCTYPE service-group SYSTEM \"avahi-service.dtd\">
+
+<service-group>
+<name replace-wildcards=\"yes\">${SERVICE_NAME}</name>
+<service>
+  <type>_smb._tcp</type>
+  <port>${SMB_PORT}</port>
+  ${HOSTNAME_XML}
+</service>
+</service-group>" > /etc/avahi/services/smbd.service
 
 # cleanup PID files
 for PIDFILE in nmbd samba-bgqd smbd
