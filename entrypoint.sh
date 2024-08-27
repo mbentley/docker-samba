@@ -50,6 +50,7 @@ add_user_to_group() {
   GROUP="${2}"
 
   # add user to the group
+  # TODO: make sure that the user exists first
   echo "INFO: adding ${USERNAME} to ${GROUP}"
   addgroup "${USERNAME}" "${GROUP}"
 }
@@ -161,6 +162,7 @@ then
     # create group, if needed
     add_group "${GROUP}" "${GROUP_ID}"
 
+    # loop through the users; add each to the group
     for USERNAME in ${MEMBERS}
     do
       # add user to the group
@@ -183,22 +185,27 @@ createdir /var/log/samba/cores 700
 echo "INFO: generating avahi configuration for /etc/avahi/services/smbd.service..."
 SERVICE_NAME="%h"
 HOSTNAME_XML=""
+
+# try to read smb port from smb.conf; default to 445 if not set
+SMB_PORT="$(grep "smb ports" /etc/samba/smb.conf 2>/dev/null | awk -F '=' '{print $2}' | awk '{print $1}')"
+SMB_PORT="${SMB_PORT:-445}"
+
+# see if an advertised hostname was set
 if [ -n "${ADVERTISED_HOSTNAME}" ]
 then
   echo "INFO: Avahi - using ${ADVERTISED_HOSTNAME} as hostname."
   SERVICE_NAME="${ADVERTISED_HOSTNAME}"
-  HOSTNAME_XML="<host-name>${ADVERTISED_HOSTNAME}.local</host-name>"
+  HOSTNAME_XML="
+    <host-name>${ADVERTISED_HOSTNAME}.local</host-name>"
 fi
-echo "<?xml version=\"1.0\" standalone='no'?><!--*-nxml-*-->
+echo "<?xml version=\"1.0\" standalone='no'?>
 <!DOCTYPE service-group SYSTEM \"avahi-service.dtd\">
-
 <service-group>
-<name replace-wildcards=\"yes\">${SERVICE_NAME}</name>
-<service>
-  <type>_smb._tcp</type>
-  <port>${SMB_PORT}</port>
-  ${HOSTNAME_XML}
-</service>
+  <name replace-wildcards=\"yes\">${SERVICE_NAME}</name>
+  <service>
+    <type>_smb._tcp</type>
+    <port>${SMB_PORT}</port>${HOSTNAME_XML}
+  </service>
 </service-group>" > /etc/avahi/services/smbd.service
 
 # cleanup PID files
