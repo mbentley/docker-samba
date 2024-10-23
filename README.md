@@ -2,6 +2,10 @@
 
 docker image based on alpine:latest to run a generic Samba container where you bring your own samba config.
 
+## Tags
+
+* `latest` - multi-arch for `amd64` and `arm64`
+
 ## Usage
 
 Example usage - see further below for additional information about the `ACCOUNT_*`, and `GROUP_*` environment variables.
