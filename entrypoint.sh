@@ -122,8 +122,22 @@ then
 
     # TODO: make sure none of these are empty before adding
 
+    # default the user's primary group id to the uid
+    USER_GID="${USER_UID}"
+
+    # check for a GROUP_<username> variable; if one exists, use its gid for the user's primary group
+    GROUP_VARNAME="GROUP_${USERNAME}"
+    if [ -n "${!GROUP_VARNAME}" ]
+    then
+      GROUP_GID="$(echo "${!GROUP_VARNAME}" | awk -F ':' '{print $1}')"
+      echo "INFO: found ${GROUP_VARNAME} for user ${USERNAME}; using gid ${GROUP_GID} for primary group ${USERNAME} (uid is ${USER_UID})"
+      USER_GID="${GROUP_GID}"
+    else
+      echo "INFO: no ${GROUP_VARNAME} found for user ${USERNAME}; using gid ${USER_GID} (same as uid) for primary group ${USERNAME}"
+    fi
+
     # create group, if needed
-    add_group "${USERNAME}" "${USER_UID}"
+    add_group "${USERNAME}" "${USER_GID}"
 
     # create user account & set samba password
     add_user "${USERNAME}" "${USER_UID}"

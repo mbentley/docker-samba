@@ -61,6 +61,13 @@ Example to create the user `user1` with the user id `1000` and the samba passwor
 -e ACCOUNT_user1="1000:mysecret"
 ```
 
+Each user also gets a primary group with the same name as the user. By default its group id matches the user id. If a `GROUP_<username>` variable exists with the same name as the user, the group id from that variable is used instead (see [Groups](#groups)). Example with user id `1003` and group id `103`:
+
+```
+-e ACCOUNT_user1="1003:mysecret" \
+-e GROUP_user1="103:user1"
+```
+
 ## Groups
 
 Replace `<group_name>`, `<group_id>`, and `<space_separated_user_list>` with the group name, group id, and a space separated list of users to add to the group.
